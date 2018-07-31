@@ -1,0 +1,93 @@
+# This file contains the fastlane.tools configuration
+# You can find the documentation at https://docs.fastlane.tools
+#
+# For a list of all available actions, check out
+#
+#     https://docs.fastlane.tools/actions
+#
+# For a list of all available plugins, check out
+#
+#     https://docs.fastlane.tools/plugins/available-plugins
+#
+
+# Uncomment the line if you want fastlane to automatically update itself
+# update_fastlane
+
+default_platform(:ios)
+
+# 指定持续集成对象的平台名称
+platform :ios do
+# 给lane命名
+lane :adHoc do|options|
+branch = options[:branch]
+
+
+# target区分提测环境
+# puts是ruby中的输出，gets为获取终端中输入的文字。
+puts "请选择要打的scheme：（1：FastlaneTest，else: 项目Target）"      
+scheme = STDIN.gets
+# 通过判断输入内容，来区分一些打包信息，1后面加\n是因为在终端输入1再敲回车的时候scheme就包含了回车的内容，所以scheme == "1\n"
+if scheme == "1\n" 
+# 项目中target的名称
+  schemeName = "FastlaneTest"
+# 打包的用途(app-store, package, ad-hoc, enterprise, development).
+  export_method = "ad-hoc"      
+ else
+  schemeName = "项目Target"
+  export_method = "enterprise"      
+end
+
+#从蒲公英平台拿到的api_key和user_key.
+api_key = "xxxxxxxxx"
+user_key = "xxxxxxxxx"
+
+
+
+#输入蒲公英上传ipa包后输入的版本描述信息
+puts "请输入版本描述信息："
+desc = STDIN.gets
+
+
+
+puts "开始打包 #{schemeName}"
+# 开始打包
+gym(
+#指定scheme的名字
+scheme: "#{schemeName}",
+#输出的ipa名称
+output_name:"#{schemeName}",
+# 是否清空以前的编译信息 true：是
+clean:true,
+# 指定打包方式，Release 或者 Debug
+configuration:"Release",
+# 指定打包所使用的输出方式(app-store, package, ad-hoc, enterprise, development).
+export_method:"#{export_method}",
+# 访问钥匙串
+export_xcargs: "-allowProvisioningUpdates",
+# 指定输出文件路径
+output_directory:"./fastlane/build",
+# 配置证书
+#export_options: {
+	#provisioningProfiles:{
+      	#{}"xxx.xxx.xxx" => "xxxxx",
+      #}
+  #}
+)
+
+puts "开始上传到蒲公英"
+# 上传屏蔽
+#deliver(force: true, 
+	  # 不上传屏幕截图
+      #skip_screenshots:true, 
+      # 不上传元数据 
+      #skip_metadata:true,
+      #)
+#开始上传ipa到蒲公英，这里用的是蒲公英提供的插件
+#update_description代表更新信息，password代表安装密码
+pgyer(update_description: "#{desc}", api_key: "#{api_key}", user_key: "#{user_key}", password: "123456", install_type: "2")
+
+#在上传完ipa后，打开ipa的存放文件夹，起到提示上传完成的作用
+system "open ../fastlane/build"
+
+end
+end
